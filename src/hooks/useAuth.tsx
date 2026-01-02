@@ -1,19 +1,26 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 
-interface Profile {
+type Profile = {
   id: string;
   user_id: string;
   full_name: string | null;
   phone: string | null;
   avatar_url: string | null;
   user_type: string;
-}
+};
+
+type User = {
+  id: string;
+  email: string;
+};
+
+type Session = {
+  user: User;
+} | null;
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
+  session: Session;
   profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -24,119 +31,127 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const USERS_KEY = 'miskinerbasa_users';
+const PROFILES_KEY = 'miskinerbasa_profiles';
+const SESSION_KEY = 'miskinerbasa_session';
+
+const readJson = <T,>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) as T : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeJson = (key: string, value: unknown) => {
+  localStorage.setItem(key, JSON.stringify(value));
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setProfile(data as Profile);
-    }
-  };
-
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile fetch with setTimeout to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    const saved = readJson<{ user: User }>(SESSION_KEY);
+    if (saved?.user) {
+      setUser(saved.user);
+      setSession({ user: saved.user });
+      const profiles = readJson<Profile[]>(PROFILES_KEY) || [];
+      const p = profiles.find((x) => x.user_id === saved.user.id) || null;
+      setProfile(p);
+    }
+    setLoading(false);
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-    
-    return { error };
+    try {
+      // This is a frontend-only mock: store user and profile locally.
+      const users = readJson<User[]>(USERS_KEY) || [];
+      if (users.find((u) => u.email === email)) {
+        return { error: new Error('Email already registered') };
+      }
+
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const newUser: User = { id, email };
+      users.push(newUser);
+      writeJson(USERS_KEY, users);
+
+      const profiles = readJson<Profile[]>(PROFILES_KEY) || [];
+      const newProfile: Profile = {
+        id: `${id}-profile`,
+        user_id: id,
+        full_name: fullName,
+        phone: null,
+        avatar_url: null,
+        user_type: 'owner',
+      };
+      profiles.push(newProfile);
+      writeJson(PROFILES_KEY, profiles);
+
+      const sessionObj = { user: newUser };
+      writeJson(SESSION_KEY, sessionObj);
+      setUser(newUser);
+      setSession(sessionObj);
+      setProfile(newProfile);
+
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error('Sign up failed') };
+    }
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    return { error };
+  const signIn = async (email: string, _password: string) => {
+    try {
+      const users = readJson<User[]>(USERS_KEY) || [];
+      const found = users.find((u) => u.email === email);
+      if (!found) return { error: new Error('User not found') };
+
+      const sessionObj = { user: found };
+      writeJson(SESSION_KEY, sessionObj);
+      setUser(found);
+      setSession(sessionObj);
+
+      const profiles = readJson<Profile[]>(PROFILES_KEY) || [];
+      const p = profiles.find((x) => x.user_id === found.id) || null;
+      setProfile(p);
+
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error('Sign in failed') };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem(SESSION_KEY);
+    setUser(null);
+    setSession(null);
     setProfile(null);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) {
-      return { error: new Error('No user logged in') };
+    if (!user) return { error: new Error('No user logged in') };
+
+    try {
+      const profiles = readJson<Profile[]>(PROFILES_KEY) || [];
+      const idx = profiles.findIndex((p) => p.user_id === user.id);
+      if (idx === -1) return { error: new Error('Profile not found') };
+
+      profiles[idx] = { ...profiles[idx], ...updates };
+      writeJson(PROFILES_KEY, profiles);
+      setProfile(profiles[idx]);
+
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error('Update failed') };
     }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('user_id', user.id);
-
-    if (!error) {
-      setProfile((prev) => prev ? { ...prev, ...updates } : null);
-    }
-
-    return { error };
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        loading,
-        signUp,
-        signIn,
-        signOut,
-        updateProfile,
-      }}
+      value={{ user, session, profile, loading, signUp, signIn, signOut, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

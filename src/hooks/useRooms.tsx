@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from './use-toast';
 
@@ -57,32 +56,28 @@ export const useRooms = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const uploadImages = async (images: File[]): Promise<string[]> => {
     if (!user) throw new Error('Must be logged in to upload images');
-    
-    const uploadedUrls: string[] = [];
-    
-    for (const image of images) {
-      const fileExt = image.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('room-images')
-        .upload(fileName, image);
-      
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw new Error(`Failed to upload image: ${uploadError.message}`);
+    const uploaded: string[] = [];
+    for (const img of images) {
+      try {
+        const dataUrl = await readFileAsDataUrl(img);
+        uploaded.push(dataUrl);
+      } catch (err) {
+        console.error('Image read error', err);
+        throw err;
       }
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('room-images')
-        .getPublicUrl(fileName);
-      
-      uploadedUrls.push(publicUrl);
     }
-    
-    return uploadedUrls;
+    return uploaded;
   };
 
   const createRoom = async (roomData: RoomInsert, imageFiles: File[]): Promise<RoomData | null> => {
@@ -98,53 +93,49 @@ export const useRooms = () => {
     setIsLoading(true);
     
     try {
-      // Upload images first
+      // Upload images first (stored as data URLs in localStorage)
       const imageUrls = await uploadImages(imageFiles);
-      
-      // Prepare nearby universities as JSONB
-      const nearbyUniversities = roomData.nearbyUniversities?.map(name => ({
-        name,
-        distance: 'Nearby'
-      })) || [];
 
-      const { data, error } = await supabase
-        .from('rooms')
-        .insert({
-          owner_id: user.id,
-          title: roomData.title,
-          area: roomData.area,
-          address: roomData.address,
-          rent: roomData.rent,
-          room_type: roomData.roomType,
-          gender_preference: roomData.genderPreference,
-          seats: roomData.seats,
-          has_attached_bathroom: roomData.hasAttachedBathroom,
-          is_furnished: roomData.isFurnished,
-          wifi_included: roomData.wifiIncluded,
-          gas_included: roomData.gasIncluded,
-          electricity_included: roomData.electricityIncluded,
-          images: imageUrls,
-          description: roomData.description,
-          rules: roomData.rules,
-          nearby_universities: nearbyUniversities,
-          owner_name: roomData.ownerName,
-          owner_phone: roomData.ownerPhone,
-          owner_whatsapp: roomData.ownerWhatsApp || null,
-        })
-        .select()
-        .single();
+      const nearbyUniversities = roomData.nearbyUniversities?.map((name) => ({ name, distance: 'Nearby' })) || [];
 
-      if (error) {
-        console.error('Create room error:', error);
-        throw new Error(error.message);
-      }
+      const rooms = JSON.parse(localStorage.getItem('miskinerbasa_rooms') || '[]') as RoomData[];
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const now = new Date().toISOString();
+      const newRoom: RoomData = {
+        id,
+        owner_id: user.id,
+        title: roomData.title,
+        area: roomData.area,
+        address: roomData.address,
+        rent: roomData.rent,
+        room_type: roomData.roomType,
+        gender_preference: roomData.genderPreference,
+        seats: roomData.seats,
+        has_attached_bathroom: roomData.hasAttachedBathroom,
+        is_furnished: roomData.isFurnished,
+        wifi_included: roomData.wifiIncluded,
+        gas_included: roomData.gasIncluded,
+        electricity_included: roomData.electricityIncluded,
+        images: imageUrls,
+        description: roomData.description || null,
+        rules: roomData.rules,
+        nearby_universities: nearbyUniversities,
+        coordinates: null,
+        owner_name: roomData.ownerName,
+        owner_phone: roomData.ownerPhone,
+        owner_whatsapp: roomData.ownerWhatsApp || null,
+        is_verified: false,
+        is_available: true,
+        created_at: now,
+        updated_at: now,
+      };
 
-      toast({
-        title: 'Room Listed Successfully!',
-        description: 'Your room is now visible to students.',
-      });
+      rooms.unshift(newRoom);
+      localStorage.setItem('miskinerbasa_rooms', JSON.stringify(rooms));
 
-      return data as RoomData;
+      toast({ title: 'Room Listed Successfully!', description: 'Your room is now visible to students.' });
+
+      return newRoom;
     } catch (error) {
       console.error('Error creating room:', error);
       toast({
@@ -160,136 +151,73 @@ export const useRooms = () => {
 
   const getMyRooms = async (): Promise<RoomData[]> => {
     if (!user) return [];
-
-    const { data, error } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('owner_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching rooms:', error);
-      return [];
-    }
-
-    return (data || []) as RoomData[];
+    const rooms = JSON.parse(localStorage.getItem('miskinerbasa_rooms') || '[]') as RoomData[];
+    return rooms.filter((r) => r.owner_id === user.id).sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
   };
 
   const getAllRooms = async (): Promise<RoomData[]> => {
-    const { data, error } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('is_available', true)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching rooms:', error);
-      return [];
-    }
-
-    return (data || []) as RoomData[];
+    const rooms = JSON.parse(localStorage.getItem('miskinerbasa_rooms') || '[]') as RoomData[];
+    return rooms.filter((r) => r.is_available).sort((a, b) => (b.created_at > a.created_at ? 1 : -1));
   };
 
   const getRoomById = async (id: string): Promise<RoomData | null> => {
-    const { data, error } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching room:', error);
-      return null;
-    }
-
-    return data as RoomData | null;
+    const rooms = JSON.parse(localStorage.getItem('miskinerbasa_rooms') || '[]') as RoomData[];
+    return rooms.find((r) => r.id === id) || null;
   };
 
   const updateRoom = async (id: string, updates: Partial<RoomInsert>): Promise<boolean> => {
     if (!user) return false;
+    const rooms = JSON.parse(localStorage.getItem('miskinerbasa_rooms') || '[]') as RoomData[];
+    const idx = rooms.findIndex((r) => r.id === id && r.owner_id === user.id);
+    if (idx === -1) return false;
 
-    const { error } = await supabase
-      .from('rooms')
-      .update({
-        ...updates,
-        room_type: updates.roomType,
-        gender_preference: updates.genderPreference,
-        has_attached_bathroom: updates.hasAttachedBathroom,
-        is_furnished: updates.isFurnished,
-        wifi_included: updates.wifiIncluded,
-        gas_included: updates.gasIncluded,
-        electricity_included: updates.electricityIncluded,
-        owner_name: updates.ownerName,
-        owner_phone: updates.ownerPhone,
-        owner_whatsapp: updates.ownerWhatsApp,
-      })
-      .eq('id', id)
-      .eq('owner_id', user.id);
+    const updated = {
+      ...rooms[idx],
+      ...updates,
+      room_type: updates.roomType ?? rooms[idx].room_type,
+      gender_preference: updates.genderPreference ?? rooms[idx].gender_preference,
+      has_attached_bathroom: updates.hasAttachedBathroom ?? rooms[idx].has_attached_bathroom,
+      is_furnished: updates.isFurnished ?? rooms[idx].is_furnished,
+      wifi_included: updates.wifiIncluded ?? rooms[idx].wifi_included,
+      gas_included: updates.gasIncluded ?? rooms[idx].gas_included,
+      electricity_included: updates.electricityIncluded ?? rooms[idx].electricity_included,
+      owner_name: updates.ownerName ?? rooms[idx].owner_name,
+      owner_phone: updates.ownerPhone ?? rooms[idx].owner_phone,
+      owner_whatsapp: updates.ownerWhatsApp ?? rooms[idx].owner_whatsapp,
+      updated_at: new Date().toISOString(),
+    } as unknown as RoomData;
 
-    if (error) {
-      console.error('Error updating room:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update room listing.',
-        variant: 'destructive',
-      });
-      return false;
-    }
+    rooms[idx] = updated;
+    localStorage.setItem('miskinerbasa_rooms', JSON.stringify(rooms));
 
-    toast({
-      title: 'Room Updated',
-      description: 'Your room listing has been updated.',
-    });
-
+    toast({ title: 'Room Updated', description: 'Your room listing has been updated.' });
     return true;
   };
 
   const deleteRoom = async (id: string): Promise<boolean> => {
     if (!user) return false;
+    const rooms = JSON.parse(localStorage.getItem('miskinerbasa_rooms') || '[]') as RoomData[];
+    const idx = rooms.findIndex((r) => r.id === id && r.owner_id === user.id);
+    if (idx === -1) return false;
+    rooms.splice(idx, 1);
+    localStorage.setItem('miskinerbasa_rooms', JSON.stringify(rooms));
 
-    const { error } = await supabase
-      .from('rooms')
-      .delete()
-      .eq('id', id)
-      .eq('owner_id', user.id);
-
-    if (error) {
-      console.error('Error deleting room:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete room listing.',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    toast({
-      title: 'Room Deleted',
-      description: 'Your room listing has been removed.',
-    });
-
+    toast({ title: 'Room Deleted', description: 'Your room listing has been removed.' });
     return true;
   };
 
   const toggleAvailability = async (id: string, isAvailable: boolean): Promise<boolean> => {
     if (!user) return false;
-
-    const { error } = await supabase
-      .from('rooms')
-      .update({ is_available: isAvailable })
-      .eq('id', id)
-      .eq('owner_id', user.id);
-
-    if (error) {
-      console.error('Error toggling availability:', error);
-      return false;
-    }
+    const rooms = JSON.parse(localStorage.getItem('miskinerbasa_rooms') || '[]') as RoomData[];
+    const idx = rooms.findIndex((r) => r.id === id && r.owner_id === user.id);
+    if (idx === -1) return false;
+    rooms[idx].is_available = isAvailable;
+    rooms[idx].updated_at = new Date().toISOString();
+    localStorage.setItem('miskinerbasa_rooms', JSON.stringify(rooms));
 
     toast({
       title: isAvailable ? 'Room Available' : 'Room Unavailable',
-      description: isAvailable 
-        ? 'Your room is now visible to students.'
-        : 'Your room is now hidden from listings.',
+      description: isAvailable ? 'Your room is now visible to students.' : 'Your room is now hidden from listings.',
     });
 
     return true;
