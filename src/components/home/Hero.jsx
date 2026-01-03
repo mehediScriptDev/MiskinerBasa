@@ -15,7 +15,9 @@ import heroImage from '@/assets/hero-dhaka.jpg';
 
 const Hero = () => {
   const navigate = useNavigate();
+  const [mode, setMode] = useState('area');
   const [selectedArea, setSelectedArea] = useState('');
+  const [selectedUniversity, setSelectedUniversity] = useState('');
   const [maxBudget, setMaxBudget] = useState('');
 
   const handleSearch = () => {
@@ -58,41 +60,70 @@ const Hero = () => {
           </p>
 
           {/* Search Box */}
-          <div 
-            className="rounded-xl bg-card p-4 shadow-xl animate-slide-up" 
+          <div
+            className="rounded-xl bg-card p-4 shadow-xl animate-slide-up"
             style={{ animationDelay: '0.2s' }}
           >
-            <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  <MapPin className="mr-1 inline h-4 w-4" />
-                  Area
-                </label>
-                <Select value={selectedArea} onValueChange={setSelectedArea}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select area" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Areas</SelectItem>
-                    {DHAKA_AREAS.map((area) => (
-                      <SelectItem key={area} value={area}>
-                        {area}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Mode Tabs */}
+            <div className="mb-3 flex items-center gap-2">
+              <button
+                onClick={() => setMode('area')}
+                className={`rounded-full px-4 py-2 text-sm ${mode === 'area' ? 'bg-white/90 text-foreground shadow' : 'bg-transparent text-muted-foreground'}`}
+              >
+                <MapPin className="mr-2 inline h-4 w-4" />
+                Search by Area
+              </button>
+              <button
+                onClick={() => setMode('university')}
+                className={`rounded-full px-4 py-2 text-sm ${mode === 'university' ? 'bg-white/90 text-foreground shadow' : 'bg-transparent text-muted-foreground'}`}
+              >
+                <GraduationCap className="mr-2 inline h-4 w-4" />
+                Near University
+              </button>
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  💰 Max Budget
-                </label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 10000"
-                  value={maxBudget}
-                  onChange={(e) => setMaxBudget(e.target.value)}
-                />
+            <div className="grid gap-4 md:grid-cols-[1fr_auto] items-end">
+              <div className="flex w-full items-center gap-3">
+                {mode === 'area' ? (
+                  <Select value={selectedArea} onValueChange={setSelectedArea} className="flex-1">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an area..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Areas</SelectItem>
+                      {DHAKA_AREAS.map((area) => (
+                        <SelectItem key={area} value={area}>
+                          {area}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select value={selectedUniversity} onValueChange={setSelectedUniversity} className="flex-1">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a university..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Universities</SelectItem>
+                      {UNIVERSITIES.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {u}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Keep budget input visible but compact */}
+                <div className="hidden sm:flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Max"
+                    className="w-28"
+                    value={maxBudget}
+                    onChange={(e) => setMaxBudget(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="flex items-end">
