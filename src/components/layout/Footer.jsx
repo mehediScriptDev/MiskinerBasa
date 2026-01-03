@@ -5,17 +5,17 @@ import { Home, Mail, Phone, Facebook, Instagram } from 'lucide-react';
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   return (
-    <footer className="border-t border-border bg-card">
-      <div className="container py-12">
+    <footer className=" bg-[#0a151e]">
+      <div className="container pt-12">
         <div className="grid gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <div className=' leading-tight'>
             <span className="font-heading text-xl lg:text-2xl font-bold text-primary">
-            <span className='text-[#114743]'>Miskiner</span>basha
+            <span className='text-gray-200'>Miskiner</span>basha
           </span>
-          <p className='text-xs -mt-1 text-primary'>Student housing</p>
+          <p className='text-xs -mt-1 text-gray-200'>Student housing</p>
           </div>
             </Link>
             <p className="text-sm text-muted-foreground">
@@ -111,7 +111,7 @@ const Footer = () => {
         </div>
         
       </div>
-      <small className='text-center block text-muted-foreground -mt-10'>Developed by <Link className='text-primary font-semibold' target='_blank' to="https://mehediscriptdev.vercel.app">Mehedi</Link> </small>
+      <small className='text-center block text-muted-foreground '>Developed by <Link className='text-primary font-semibold' target='_blank' to="https://mehediscriptdev.vercel.app">Mehedi</Link> </small>
     </footer>
   );
 };
