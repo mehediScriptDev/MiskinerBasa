@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { DHAKA_AREAS } from '@/types/room';
 
-// Interface removed
+
 
 const SearchFilters = ({ filters, onFiltersChange, onClearFilters  }) => {
   const updateFilter = (key, value) => {

@@ -83,9 +83,9 @@ const Hero = () => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-[1fr_auto] items-end">
-              <div className="flex w-full items-center gap-3">
+              <div className="flex w-full flex-col md:flex-row items-center gap-3">
                 {mode === 'area' ? (
-                  <Select value={selectedArea} onValueChange={setSelectedArea} className="flex-1">
+                  <Select value={selectedArea} onValueChange={setSelectedArea} className="w-full md:flex-1">
                     <SelectTrigger>
                       <SelectValue placeholder="Select an area..." />
                     </SelectTrigger>
@@ -99,7 +99,7 @@ const Hero = () => {
                     </SelectContent>
                   </Select>
                 ) : (
-                  <Select value={selectedUniversity} onValueChange={setSelectedUniversity} className="flex-1">
+                  <Select value={selectedUniversity} onValueChange={setSelectedUniversity} className="w-full md:flex-1">
                     <SelectTrigger>
                       <SelectValue placeholder="Select a university..." />
                     </SelectTrigger>
@@ -114,12 +114,12 @@ const Hero = () => {
                   </Select>
                 )}
 
-                {/* Keep budget input visible but compact */}
-                <div className="hidden sm:flex items-center gap-2">
+                {/* Budget input: full-width on mobile, compact on md+ */}
+                <div className="w-full md:w-auto">
                   <Input
                     type="number"
-                    placeholder="Max"
-                    className="w-28"
+                    placeholder="Max rice"
+                    className="w-full md:w-28"
                     value={maxBudget}
                     onChange={(e) => setMaxBudget(e.target.value)}
                   />
