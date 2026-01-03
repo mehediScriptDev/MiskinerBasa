@@ -11,10 +11,12 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <Home className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="font-heading text-xl font-bold">Miskinerbasha</span>
+              <div className=' leading-tight'>
+            <span className="font-heading text-xl lg:text-2xl font-bold text-primary">
+            <span className='text-[#114743]'>Miskiner</span>basha
+          </span>
+          <p className='text-xs -mt-1 text-primary'>Student housing</p>
+          </div>
             </Link>
             <p className="text-sm text-muted-foreground">
               Helping students find affordable rooms in Dhaka since 2024. 

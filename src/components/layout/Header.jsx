@@ -45,12 +45,17 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+          {/* <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
             <Home className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="font-heading text-xl font-bold text-foreground">
-            Miskinerbasha
+          </div> */}
+          <div className=' leading-tight'>
+            <span className="font-heading text-xl lg:text-2xl font-bold text-primary">
+            <span className='text-[#114743]'>Miskiner</span>basha
           </span>
+          <p className='text-xs -mt-1 text-primary'>Student housing</p>
+          </div>
+          {/* <img src="/logo.png" className='w-44
+           h-auto' alt="" /> */}
         </Link>
 
         {/* Desktop Navigation */}
