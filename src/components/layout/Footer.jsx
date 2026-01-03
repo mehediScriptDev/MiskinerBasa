@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Home, Mail, Phone, Facebook, Instagram } from 'lucide-react';
 
+
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
   return (
     <footer className="border-t border-border bg-card">
       <div className="container py-12">
@@ -103,9 +105,11 @@ const Footer = () => {
         </div>
 
         <div className="mt-8 border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>© 2024 Miskinerbasha. Made with ❤️ for students in Dhaka.</p>
+          <p>© {currentYear} Miskinerbasha.</p>
         </div>
+        
       </div>
+      <small className='text-center block text-muted-foreground -mt-10'>Developed by <Link className='text-primary font-semibold' target='_blank' to="https://mehediscriptdev.vercel.app">Mehedi</Link> </small>
     </footer>
   );
 };

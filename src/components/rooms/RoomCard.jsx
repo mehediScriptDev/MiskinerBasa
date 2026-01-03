@@ -9,7 +9,10 @@ import {
   Bath, 
   Wifi, 
   CheckCircle2,
-  Heart
+  Heart,
+  GraduationCap,
+  User,
+  Users
 } from 'lucide-react';
 
 // Interface removed
@@ -82,6 +85,21 @@ const RoomCard = ({ room  }) => {
 
         {/* Features */}
         <div className="mb-4 flex flex-wrap gap-2">
+          {room.genderPreference && (
+            <Badge variant="secondary" className="gap-1 text-xs">
+              {room.genderPreference === 'any' ? (
+                <Users className="h-3 w-3" />
+              ) : (
+                <User className="h-3 w-3" />
+              )}
+              {room.genderPreference === 'male'
+                ? 'Male'
+                : room.genderPreference === 'female'
+                ? 'Female'
+                : 'Any'}
+            </Badge>
+          )}
+
           <Badge variant="secondary" className="gap-1 text-xs">
             <Bed className="h-3 w-3" />
             {room.roomType === 'single' ? 'Single' : 'Shared'}
@@ -103,7 +121,8 @@ const RoomCard = ({ room  }) => {
         {/* University Distance */}
         {room.nearbyUniversities.length > 0 && (
           <p className="mb-4 text-xs text-muted-foreground">
-            📍 {room.nearbyUniversities[0].distance} from {room.nearbyUniversities[0].name}
+            <MapPin className="inline h-4 w-4 text-primary mr-1" />
+            {room.nearbyUniversities[0].distance} from {room.nearbyUniversities[0].name}
           </p>
         )}
 
