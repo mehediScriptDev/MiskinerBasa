@@ -41,7 +41,7 @@ const RoomCard = ({ room  }) => {
         {/* Price Badge */}
         <div className="absolute bottom-3 left-3">
           <span className="rounded-lg bg-card px-3 py-1.5 font-heading text-lg font-bold text-foreground shadow-md">
-            {formatRent(room.rent)}/mo
+            {formatRent(room.rent)}<span className='text-[#898677] font-normal'>/mo</span>
           </span>
         </div>
 
@@ -86,7 +86,7 @@ const RoomCard = ({ room  }) => {
         {/* Features */}
         <div className="mb-4 flex flex-wrap gap-2">
           {room.genderPreference && (
-            <Badge variant="secondary" className="gap-1 text-xs">
+            <Badge variant="secondary" className="gap-1 text-[#10b77f] text-xs">
               {room.genderPreference === 'any' ? (
                 <Users className="h-3 w-3" />
               ) : (
@@ -127,7 +127,7 @@ const RoomCard = ({ room  }) => {
         )}
 
         <Link to={`/room/${room.id}`}>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full ">
             View Details
           </Button>
         </Link>

@@ -26,7 +26,7 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="mb-4 font-heading font-semibold">Quick Links</h4>
+            <h4 className="mb-4 font-heading font-semibold text-gray-200">Quick Links</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link to="/search" className="hover:text-primary transition-colors">
@@ -53,7 +53,7 @@ const Footer = () => {
 
           {/* Popular Areas */}
           <div>
-            <h4 className="mb-4 font-heading font-semibold">Popular Areas</h4>
+            <h4 className="mb-4 font-heading font-semibold text-gray-200">Popular Areas</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link to="/search?area=Dhanmondi" className="hover:text-primary transition-colors">
@@ -80,7 +80,7 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="mb-4 font-heading font-semibold">Contact Us</h4>
+            <h4 className="mb-4 font-heading font-semibold text-gray-200">Contact Us</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
@@ -106,7 +106,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-border pt-8 text-center text-sm text-muted-foreground">
+        <div className="mt-8 border-t border-gray-600 pt-8 text-center text-sm text-muted-foreground">
           <p>© {currentYear} Miskinerbasha.</p>
         </div>
         
