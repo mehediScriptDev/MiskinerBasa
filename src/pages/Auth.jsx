@@ -1,313 +1,205 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { MapPin, Mail, Lock, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Home, Mail, Lock, User, Loader2 } from 'lucide-react';
-
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-const signupSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name must be less than 50 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
-
-// Type removed
-// Type removed
 
 const Auth = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, signIn, signUp, loading: authLoading } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mode, setMode] = useState(
+    searchParams.get('mode') === 'signup' ? 'signup' : 'signin'
+  );
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
-  const loginForm = useForm({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  });
-
-  const signupForm = useForm({
-    resolver: zodResolver(signupSchema),
-    defaultValues: { fullName: '', email: '', password: '', confirmPassword: '' },
-  });
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && !authLoading) {
-      navigate('/');
-    }
-  }, [user, authLoading, navigate]);
-
-  const handleLogin = async (data) => {
-    setIsSubmitting(true);
-    const { error } = await signIn(data.email, data.password);
-    
-    if (error) {
-      toast({
-        title: 'Login Failed',
-        description: error.message === 'Invalid login credentials' 
-          ? 'Invalid email or password. Please try again.'
-          : error.message,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
-      navigate('/');
-    }
-    setIsSubmitting(false);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    toast({
+      title: mode === 'signin' ? 'Welcome back!' : 'Account created!',
+      description: 'Connect to Supabase to enable authentication.',
+    });
   };
-
-  const handleSignUp = async (data) => {
-    setIsSubmitting(true);
-    try {
-      const { error } = await signUp(data.email, data.password, data.fullName);
-      
-      if (error) {
-        let message = error.message;
-        if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-          message = 'This email is already registered. Please login instead.';
-        } else if (error.message.includes('Invalid email')) {
-          message = 'Please enter a valid email address.';
-        } else if (error.message.includes('Password')) {
-          message = 'Password must be at least 6 characters long.';
-        }
-        toast({
-          title: 'Sign Up Failed',
-          description: message,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Account Created!',
-          description: 'Welcome to Miskinerbasha! You are now logged in.',
-        });
-        navigate('/');
-      }
-    } catch (err) {
-      toast({
-        title: 'Sign Up Failed',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12">
-      {/* Logo */}
-      <Link to="/" className="mb-8 flex items-center gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-          <Home className="h-6 w-6 text-primary-foreground" />
-        </div>
-        <span className="font-heading text-2xl font-bold text-foreground">Miskinerbasha</span>
-      </Link>
+    <div className="min-h-screen flex">
+      {/* Left Panel - Form */}
+      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          {/* Back Link */}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
 
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="font-heading text-2xl">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
-          </CardTitle>
-          <CardDescription>
-            {isSignUp
-              ? 'Sign up to save favorites and list rooms'
-              : 'Login to access your account'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isSignUp ? (
-            <Form {...signupForm}>
-              <form onSubmit={signupForm.handleSubmit(handleSignUp)} className="space-y-4">
-                <FormField
-                  control={signupForm.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input placeholder="Your full name" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={signupForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input type="email" placeholder="your@email.com" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={signupForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={signupForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    'Create Account'
-                  )}
-                </Button>
-              </form>
-            </Form>
-          ) : (
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                <FormField
-                  control={loginForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input type="email" placeholder="your@email.com" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Logging in...
-                    </>
-                  ) : (
-                    'Login'
-                  )}
-                </Button>
-              </form>
-            </Form>
-          )}
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 mb-8">
+            {/* <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+              <Home className="h-5 w-5 text-primary-foreground" />
+            </div> */}
+            <div className=' leading-tight'>
+              <span className="font-heading text-xl lg:text-2xl font-bold text-primary">
+                <span className='text-[#114743]'>Miskiner</span>basha
+              </span>
+              <p className='text-xs -mt-1 text-primary'>Student housing</p>
+            </div>
+            {/* <img src="/logo.png" className='w-44 h-auto' alt="" /> */}
+          </Link>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            {isSignUp ? (
-              <>
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsSignUp(false)}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Login
-                </button>
-              </>
-            ) : (
-              <>
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsSignUp(true)}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Sign Up
-                </button>
-              </>
+          {/* Title */}
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            {mode === 'signin'
+              ? 'Sign in to access your saved rooms and listings'
+              : 'Join thousands of students finding rooms in Dhaka'}
+          </p>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Your name"
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
 
-      <p className="mt-8 text-center text-sm text-muted-foreground">
-        By continuing, you agree to our Terms of Service and Privacy Policy.
-      </p>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="you@example.com"
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="••••••••"
+                  className="pl-10 pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
+
+            {mode === 'signin' && (
+              <div className="flex justify-end">
+                <button type="button" className="text-sm text-primary hover:underline">Forgot password?</button>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" size="lg">
+              {mode === 'signin' ? 'Sign In' : 'Create Account'}
+            </Button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-background px-4 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Social Login */}
+          <Button variant="outline" className="w-full" size="lg">
+            <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="currentColor"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Continue with Google
+          </Button>
+
+          {/* Toggle Mode */}
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
+            <button
+              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+              className="font-semibold text-primary hover:underline"
+            >
+              {mode === 'signin' ? 'Sign up' : 'Sign in'}
+            </button>
+          </p>
+        </div>
+      </div>
+
+      {/* Right Panel - Image */}
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
+        <div className="absolute inset-0 flex flex-col justify-center p-12 text-primary-foreground">
+          <div className="max-w-md">
+            <h3 className="text-3xl font-bold mb-4">Find your perfect student room in Dhaka</h3>
+            <p className="text-lg text-primary-foreground/80 mb-8">
+              Join our community of 5,000+ students who found affordable accommodation near their universities.
+            </p>
+            <div className="space-y-4">
+              {[
+                'Verified listings from trusted homeowners',
+                'Search by area or nearby university',
+                'Save favorites and compare options',
+              ].map((feature) => (
+                <div key={feature} className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
